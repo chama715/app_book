@@ -8,6 +8,10 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State var timerHandler: Timer?
+    @State var count = 0
+    @AppStorage("timer_value") var timerValue = 10
+    @State var isShowAlert = false
     var body: some View {
         NavigationStack {
             ZStack {
@@ -16,10 +20,11 @@ struct ContentView: View {
                     .ignoresSafeArea()
                     .scaledToFit()
                 VStack(spacing: 30.0) {
-                    Text("残り10秒")
+                    Text("残り\(timerValue - count)秒")
                         .font(.largeTitle)
                     HStack {
                         Button {
+                            startTimer()
                         } label: {
                             Text("スタート")
                                 .font(.title)
@@ -29,6 +34,11 @@ struct ContentView: View {
                                 .clipShape(Circle())
                         }
                         Button {
+                            if let timerHandler {
+                                if timerHandler.isValid == true {
+                                    timerHandler.invalidate()
+                                }
+                            }
                         } label: {
                             Text("ストップ")
                                 .font(.title)
@@ -40,6 +50,9 @@ struct ContentView: View {
                     }
                 }
             }
+            .onAppear {
+                count = 0
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink {
@@ -49,7 +62,36 @@ struct ContentView: View {
                     }
                 }
             }
+            .alert("終了", isPresented: $isShowAlert) {
+                Button("OK") {
+                    print("OKがタップされました")
+                }
+            } message: {
+                Text("タイマー終了時間です")
+            }
         }
+    }
+    func countDownTimer() {
+        count += 1
+        if timerValue - count <= 0 {
+            timerHandler?.invalidate()
+            isShowAlert = true
+        }
+    }
+    func startTimer() {
+        if let timerHandler {
+            if timerHandler.isValid == true {
+                return
+            }
+        }
+        if timerValue - count <= 0 {
+            count = 0
+        }
+        timerHandler = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+            Task { @MainActor in
+                countDownTimer()
+            }
+            }
     }
 }
 
